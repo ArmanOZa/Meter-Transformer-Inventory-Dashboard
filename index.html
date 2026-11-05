@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEA KKC - Meter & Transformer Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js สำหรับทำกราฟ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Kanit & Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        peaPurple: '#5B2D82',     /* ม่วงเข้ม PEA */
+                        peaLightPurple: '#7B3F9E',/* ม่วงสว่าง */
+                        peaGold: '#FFB81C',       /* ทอง PEA */
+                        peaDarkGold: '#D99B00',   /* ทองเข้ม */
+                    },
+                    fontFamily: {
+                        kanit: ['Kanit', 'sans-serif'],
+                        prompt: ['Prompt', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; }
+        .bg-peaPurple { background-color: #5B2D82 !important; }
+        .text-peaPurple { color: #5B2D82 !important; }
+        .border-peaPurple { border-color: #5B2D82 !important; }
+        .bg-peaGold { background-color: #FFB81C !important; }
+        .text-peaGold { color: #FFB81C !important; }
+        .border-peaGold { border-color: #FFB81C !important; }
+    </style>
+</head>
+<body class="bg-slate-50 font-kanit text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-peaPurple text-white shadow-md border-b-4 border-peaGold">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-peaGold text-peaPurple p-2.5 rounded-xl font-bold shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide">การไฟฟ้าส่วนภูมิภาคจังหวัดขอนแก่น</h1>
+                    <p class="text-xs text-peaGold font-prompt">ระบบตรวจสอบและบริหารคลังมิเตอร์-หม้อแปลง (MB52 vs IQ09 vs MB51)</p>
+                </div>
+            </div>
+            <div class="mt-3 md:mt-0 flex items-center space-x-2 text-sm bg-purple-900/50 px-4 py-2 rounded-lg border border-purple-700">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-purple-100">สถานะฐานข้อมูล: เชื่อมต่อเรียบร้อย</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full space-y-8">
+
+        <!-- Summary Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl shadow-sm p-6 border-t-4 border-peaPurple flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 font-prompt">ยอดคงเหลือ (MB52)</p>
+                    <h3 class="text-3xl font-bold text-peaPurple mt-1" id="totalMB52Count">กำลังโหลด...</h3>
+                    <p class="text-xs text-slate-400 mt-1">คอลัมน์ E (ที่ใช้ได้)</p>
+                </div>
+                <div class="p-4 bg-purple-50 text-peaPurple rounded-2xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6 border-t-4 border-peaGold flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 font-prompt">อุปกรณ์รายตัว (IQ09)</p>
+                    <h3 class="text-3xl font-bold text-amber-600 mt-1" id="totalIQ09Count">กำลังโหลด...</h3>
+                    <p class="text-xs text-slate-400 mt-1">คอลัมน์ I (คำอธิบาย)</p>
+                </div>
+                <div class="p-4 bg-amber-50 text-amber-600 rounded-2xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6 border-t-4 border-emerald-500 flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500 font-prompt">สถานะการเทียบยอด</p>
+                    <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="statusMatchText">กำลังตรวจสอบ...</h3>
+                    <p class="text-xs text-slate-400 mt-1">MB52 (E) vs IQ09 (I)</p>
+                </div>
+                <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Charts & Validation Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Pie Chart Container: Match Ratio -->
+            <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center">
+                <h3 class="text-base font-bold text-peaPurple mb-4 w-full text-left flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-peaGold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    </svg>
+                    สัดส่วนยอดเทียบ (MB52 vs IQ09)
+                </h3>
+                <div class="w-full h-64 flex items-center justify-center">
+                    <canvas id="matchPieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Bar Chart Container: Dynamic Group Analytics -->
+            <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center">
+                <div class="flex flex-col sm:flex-row justify-between items-center w-full mb-4 gap-2">
+                    <h3 class="text-base font-bold text-peaPurple flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-peaGold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        กราฟสรุปยอดวิเคราะห์กลุ่ม
+                    </h3>
+                    <select id="chartMetricSelect" class="text-xs px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-peaPurple font-kanit">
+                        <option value="status">สถานะระบบ (System Status - F)</option>
+                        <option value="desc">คำอธิบาย (Description - I)</option>
+                    </select>
+                </div>
+                <div class="w-full h-64 flex items-center justify-center">
+                    <canvas id="dynamicBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Discrepancy & MB51 Notice Box -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div>
+                <h3 class="text-base font-bold text-peaPurple flex items-center gap-2 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    รายงานรายการที่ข้อมูลไม่ตรงกัน (Discrepancy Log)
+                </h3>
+                <p class="text-xs text-slate-500 mb-4">หากจำนวนนับระหว่าง MB52 (คอลัมน์ E) และ IQ09 (คอลัมน์ I) ไม่ตรงกัน ระบบจะแสดงรายชื่อรายการด้านล่าง พร้อมคำแนะนำให้ไปค้นหาใน MB51 เพิ่มเติม</p>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-100 max-h-48 overflow-y-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-purple-50 text-peaPurple sticky top-0 font-prompt">
+                        <tr>
+                            <th class="p-2.5">คำอธิบายวัสดุ</th>
+                            <th class="p-2.5 text-center">MB52 (E)</th>
+                            <th class="p-2.5 text-center">IQ09 (I)</th>
+                            <th class="p-2.5">คำแนะนำระบบ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="discrepancyTableBody" class="divide-y divide-slate-100 bg-white">
+                        <tr>
+                            <td colspan="4" class="p-4 text-center text-slate-400">กำลังตรวจสอบความถูกต้องของข้อมูล...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Advanced Filter & Search Section -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
+                <h2 class="text-lg font-bold text-peaPurple flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-peaGold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    ค้นหาและกรองข้อมูลพัสดุรายตัว (IQ09)
+                </h2>
+
+                <!-- Advanced Filter Bar -->
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    <!-- Filter Stock Type (Col G) -->
+                    <select id="filterStockType" class="w-full sm:w-44 px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-peaPurple text-sm font-kanit">
+                        <option value="">-- ประเภทสต็อคทั้งหมด --</option>
+                    </select>
+
+                    <!-- Filter Description Sub-group (Col I) -->
+                    <select id="filterSubGroup" class="w-full sm:w-56 px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-peaPurple text-sm font-kanit">
+                        <option value="">-- กลุ่มคำอธิบายทั้งหมด --</option>
+                    </select>
+
+                    <!-- Text Search Product No (Col B) -->
+                    <input type="text" id="searchInput" placeholder="ค้นหาเลขผลิตภัณฑ์ (B)..." 
+                           class="w-full sm:w-52 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-peaPurple text-sm">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-peaPurple text-white font-prompt">
+                            <th class="p-3.5">เลขที่ผลิตภัณฑ์ (B)</th>
+                            <th class="p-3.5">คำอธิบาย (I)</th>
+                            <th class="p-3.5">ประเภทสต็อค (G)</th>
+                            <th class="p-3.5">สถานะระบบ (F)</th>
+                            <th class="p-3.5">ที่เก็บสินค้า (M)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="divide-y divide-slate-100 bg-white">
+                        <tr>
+                            <td colspan="5" class="p-4 text-center text-slate-400">กำลังโหลดข้อมูลจาก Google Sheets...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 mt-auto border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs space-y-1">
+            <p class="text-slate-300 font-medium">Provincial Electricity Authority - Khon Kaen Province (PEA KKC)</p>
+            <p>Meter & Transformer Inventory Dashboard | Theme: Purple, Gold & White</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript สำหรับดึงข้อมูลและจัดการระบบ Filter & Dynamic Charts -->
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbygvoK8KG4r7qW-wpYm-Xb3H6Q4wVdE3qFrlHufQdlnI7iWFlTKKGdZ_1hdKLqz4EZtTg/exec";
+        let allIQ09Data = [];
+        let pieChartInstance = null;
+        let barChartInstance = null;
+
+        function cleanText(text) {
+            if (!text) return '-';
+            return String(text).replace(/\*\*/g, '').trim();
+        }
+
+        async function loadData() {
+            try {
+                let response = await fetch(WEB_APP_URL);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                let data = await response.json();
+                
+                let mb52Rows = (data.mb52 && data.mb52.length > 1) ? data.mb52.slice(1) : [];
+                let iq09Rows = (data.iq09 && data.iq09.length > 1) ? data.iq09.slice(1) : [];
+                
+                document.getElementById('totalMB52Count').innerText = mb52Rows.length.toLocaleString() + " รายการ";
+                document.getElementById('totalIQ09Count').innerText = iq09Rows.length.toLocaleString() + " รายการ";
+
+                allIQ09Data = iq09Rows;
+
+                // สร้างตัวเลือกใน Advanced Filter Dropdowns
+                populateFilterDropdowns(iq09Rows);
+
+                // แสดงผลตารางและกราฟเริ่มต้น
+                filterAndRenderData();
+                processComparison(mb52Rows, iq09Rows);
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+                document.getElementById('totalMB52Count').innerText = "โหลดไม่สำเร็จ";
+                document.getElementById('totalIQ09Count').innerText = "โหลดไม่สำเร็จ";
+            }
+        }
+
+        function populateFilterDropdowns(rows) {
+            let stockTypes = new Set();
+            let subGroups = new Set();
+
+            rows.forEach(row => {
+                let st = cleanText(row[6]); // Col G = Index 6
+                let desc = cleanText(row[8]); // Col I = Index 8
+                if(st && st !== '-') stockTypes.add(st);
+                if(desc && desc !== '-') subGroups.add(desc);
+            });
+
+            let stockSelect = document.getElementById('filterStockType');
+            stockTypes.forEach(st => {
+                let opt = document.createElement('option');
+                opt.value = st;
+                opt.innerText = "ประเภทสต็อค: " + st;
+                stockSelect.appendChild(opt);
+            });
+
+            let subGroupSelect = document.getElementById('filterSubGroup');
+            subGroups.forEach(sg => {
+                let opt = document.createElement('option');
+                opt.value = sg;
+                opt.innerText = sg;
+                subGroupSelect.appendChild(opt);
+            });
+        }
+
+        function filterAndRenderData() {
+            const stockFilter = document.getElementById('filterStockType').value;
+            const subGroupFilter = document.getElementById('filterSubGroup').value;
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+
+            const filtered = allIQ09Data.filter(row => {
+                let productNo = String(row[1] || "").toLowerCase();
+                let stockType = cleanText(row[6]);
+                let desc = cleanText(row[8]);
+
+                let matchStock = !stockFilter || stockType === stockFilter;
+                let matchSubGroup = !subGroupFilter || desc === subGroupFilter;
+                let matchKeyword = !keyword || productNo.includes(keyword);
+
+                return matchStock && matchSubGroup && matchKeyword;
+            });
+
+            renderTable(filtered);
+            updateDynamicBarChart(filtered);
+        }
+
+        function processComparison(mb52Rows, iq09Rows) {
+            let mb52Map = {};
+            mb52Rows.forEach(row => {
+                let desc = cleanText(row[2]); // Col C = Index 2
+                let qty = parseFloat(row[4]) || 0; // Col E = Index 4
+                if(desc && desc !== '-') {
+                    mb52Map[desc] = (mb52Map[desc] || 0) + qty;
+                }
+            });
+
+            let iq09Map = {};
+            iq09Rows.forEach(row => {
+                let desc = cleanText(row[8]); // Col I = Index 8
+                if(desc && desc !== '-') {
+                    iq09Map[desc] = (iq09Map[desc] || 0) + 1;
+                }
+            });
+
+            let matchCount = 0;
+            let mismatchCount = 0;
+            let discrepancyHTML = "";
+
+            let allDescs = new Set([...Object.keys(mb52Map), ...Object.keys(iq09Map)]);
+
+            allDescs.forEach(desc => {
+                let qtyMB52 = mb52Map[desc] || 0;
+                let countIQ09 = iq09Map[desc] || 0;
+
+                if(qtyMB52 === countIQ09) {
+                    matchCount++;
+                } else {
+                    mismatchCount++;
+                    discrepancyHTML += `
+                        <tr class="hover:bg-amber-50/50">
+                            <td class="p-2.5 font-medium text-slate-700">${desc}</td>
+                            <td class="p-2.5 text-center font-bold text-peaPurple">${qtyMB52}</td>
+                            <td class="p-2.5 text-center font-bold text-amber-600">${countIQ09}</td>
+                            <td class="p-2.5 text-amber-700 font-medium">⚠️ ไม่ตรงกัน -> <span class="underline cursor-pointer text-peaPurple font-bold">ไปค้นหาใน MB51 เพิ่มเติม</span></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if(mismatchCount === 0) {
+                document.getElementById('statusMatchText').innerText = "ตรงกันทั้งหมด";
+                discrepancyHTML = `<tr><td colspan="4" class="p-4 text-center text-emerald-600 font-medium">ยอดคงเหลือ MB52 และ IQ09 ตรงกันทุกรายการ ไม่มีจุดที่ผิดปกติ</td></tr>`;
+            } else {
+                document.getElementById('statusMatchText').innerText = mismatchCount + " รายการไม่ตรง";
+            }
+
+            document.getElementById('discrepancyTableBody').innerHTML = discrepancyHTML;
+            renderPieChart(matchCount, mismatchCount);
+        }
+
+        function updateDynamicBarChart(rows) {
+            const metric = document.getElementById('chartMetricSelect').value;
+            let groupMap = {};
+
+            rows.forEach(row => {
+                let key = '-';
+                if (metric === 'status') {
+                    key = cleanText(row[5]); // Col F = Index 5
+                } else if (metric === 'desc') {
+                    key = cleanText(row[8]); // Col I = Index 8
+                }
+
+                if(key && key !== '-') {
+                    groupMap[key] = (groupMap[key] || 0) + 1;
+                }
+            });
+
+            let labels = Object.keys(groupMap);
+            let data = Object.values(groupMap);
+
+            renderBarChart(labels, data, metric === 'status' ? 'จำนวนตามสถานะระบบ' : 'จำนวนตามคำอธิบาย');
+        }
+
+        function renderPieChart(match, mismatch) {
+            const ctx = document.getElementById('matchPieChart').getContext('2d');
+            if(pieChartInstance) {
+                pieChartInstance.destroy();
+            }
+
+            pieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ยอดตรงกัน', 'ยอดไม่ตรงกัน'],
+                    datasets: [{
+                        data: [match, mismatch],
+                        backgroundColor: ['#5B2D82', '#FFB81C'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Kanit', size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderBarChart(labels, data, labelTitle) {
+            const ctx = document.getElementById('dynamicBarChart').getContext('2d');
+            if(barChartInstance) {
+                barChartInstance.destroy();
+            }
+
+            barChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: labelTitle,
+                        data: data,
+                        backgroundColor: '#5B2D82',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { font: { family: 'Kanit' } }
+                        },
+                        x: {
+                            ticks: { font: { family: 'Kanit' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTable(rows) {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = "";
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>`;
+                return;
+            }
+
+            const displayRows = rows.slice(0, 100);
+
+            displayRows.forEach(row => {
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                
+                let productNo = cleanText(row[1]); // Col B
+                let description = cleanText(row[8]); // Col I
+                let stockType = cleanText(row[6]); // Col G
+                let sysStatus = cleanText(row[5]); // Col F
+                let storageLoc = cleanText(row[12]); // Col M
+
+                tr.innerHTML = `
+                    <td class="p-3.5 font-medium text-peaPurple">${productNo}</td>
+                    <td class="p-3.5">${description}</td>
+                    <td class="p-3.5">${stockType}</td>
+                    <td class="p-3.5"><span class="px-2.5 py-1 bg-purple-100 text-peaPurple rounded-full text-xs">${sysStatus}</span></td>
+                    <td class="p-3.5 text-slate-500">${storageLoc}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Event Listeners สำหรับ Advanced Filter & Chart Metric Toggle
+        document.getElementById('filterStockType').addEventListener('change', filterAndRenderData);
+        document.getElementById('filterSubGroup').addEventListener('change', filterAndRenderData);
+        document.getElementById('searchInput').addEventListener('input', filterAndRenderData);
+        document.getElementById('chartMetricSelect').addEventListener('change', () => {
+            const stockFilter = document.getElementById('filterStockType').value;
+            const subGroupFilter = document.getElementById('filterSubGroup').value;
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+
+            const filtered = allIQ09Data.filter(row => {
+                let productNo = String(row[1] || "").toLowerCase();
+                let stockType = cleanText(row[6]);
+                let desc = cleanText(row[8]);
+                return (!stockFilter || stockType === stockFilter) &&
+                       (!subGroupFilter || desc === subGroupFilter) &&
+                       (!keyword || productNo.includes(keyword));
+            });
+            updateDynamicBarChart(filtered);
+        });
+
+        loadData();
+    </script>
+</body>
+</html>
